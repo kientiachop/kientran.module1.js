@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Học Viên</title>
+</head>
+
+<body>
+    <div id="container">
+        <h2>Thông tin học viên</h2>
+        <label for="fullName">Họ và Tên </label>
+        <input type="text" id="fullName" placeholder="vui lòng nhập tên" required>
+        <br><br>
+        <label for="email">Email </label>
+        <input type="email" id="email" placeholder="vui lòng nhập email" required>
+        <br><br>
+        <label for="phoneNumber">Số điện thoại </label>
+        <input type="tel" id="phoneNumber" placeholder="vui lòng nhập số điện thoại" required>
+        <br><br>
+        <label for="country">Quê quán </label>
+        <input type="text" id="country" placeholder="vui lòng nhập địa chỉ quê quán" required>
+        <br><br>
+        <label for="gender">Giới tính </label>
+        <input type="radio" name="gender" id="male" value="Nam" checked> Nam
+        <input type="radio" name="gender" id="female" value="Nữ"> Nữ
+        <br><br>
+        <button id="save" onclick="save()">Lưu lại </button>
+
+    </div>
+
+    <div>
+        <h2>Danh sách học viên</h2>
+        <label for="">Tìm kiếm tên học viên: </label>
+        <input type="text" id="searchStudent">
+        <button id="search" onclick='search()'>Tìm kiếm </button>
+
+        <table border="1">
+            <thead>
+                <th>#</th>
+                <th>Họ và Tên</th>
+                <th>Email</th>
+                <th>Điện thoại</th>
+                <th>Địa chỉ</th>
+                <th>Giới tính</th>
+                <th>Hành động</th>
+                <th><button onclick="arrangeAlphaB()">Sắp xếp</button></th>
+            </thead>
+
+            <tbody id="tableStudent">
+
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let students = JSON.parse(localStorage.getItem("dataStudent")) || [];
+
+        function isValidPhoneNumber(phoneNumber) {
+            const vietnamesePhoneNumberRegex = /^(0[1-9]|01[2-9])[0-9]{8}$/;
+            return vietnamesePhoneNumberRegex.test(phoneNumber);
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function isValidName(name) {
+            return name.trim() !== '';
+        }
+
+        function uniqueEmail(email) {
+            for (let i in students) {
+                if (students.hasOwnProperty(i) && students[i].email === email) {
+                    alert("Email đã bị trùng");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function uniquePhone(phoneNumber) {
+            for (let i in students) {
+                if (students.hasOwnProperty(i) && students[i].phoneNumber === phoneNumber) {
+                    alert("SĐT đã bị trùng");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function save() {
+            let fullName = document.getElementById("fullName").value;
+            let email = document.getElementById("email").value;
+            let phoneNumber = document.getElementById("phoneNumber").value;
+            let country = document.getElementById("country").value;
+            let gender = document.querySelector('input[name="gender"]:checked');
+
+            if (!isValidName(fullName)) {
+                alert('Họ và tên không được để trống.');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                alert('Email không hợp lệ.');
+                return;
+            }
+
+            if (!isValidPhoneNumber(phoneNumber)) {
+                alert('Số điện thoại không hợp lệ.');
+                return;
+            }
+
+            if (country.trim() === '') {
+                alert('Quê quán không được để trống.');
+                return;
+            }
+
+            if (!uniqueEmail(email)) {
+                return;
+            }
+
+            let genderValue = gender ? gender.value : "";
+
+            let student = {
+                fullName: fullName,
+                email: email,
+                phoneNumber: phoneNumber,
+                country: country,
+                gender: genderValue
+            };
+
+            students.push(student);
+            localStorage.setItem("dataStudent", JSON.stringify(students));
+            renderStudent();
+        }
+
+        function renderStudent() {
+            let html = "";
+
+            for (let i = 0; i < students.length; i++) {
+                html +=
+                    `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${students[i].fullName}</td>
+                        <td>${students[i].email}</td>
+                        <td>${students[i].phoneNumber}</td>
+                        <td>${students[i].country}</td>
+                        <td>${students[i].gender}</td>
+                        <td>
+                            <a onclick="editStudent(${i})" href="#">Edit</a>
+                            <a onclick="deleteStudent(${i})" href="#">Delete</a>
+                        </td>
+                    </tr>
+                    `
+            }
+
+            document.getElementById("tableStudent").innerHTML = html;
+        }
+
+        function deleteStudent(index) {
+            let confirmDelete = confirm("Bạn có muốn xoá hay không?");
+            if (!confirmDelete) {
+                return;
+            }
+
+            students.splice(index, 1);
+            localStorage.setItem("dataStudent", JSON.stringify(students));
+            renderStudent();
+        }
+
+        function editStudent(index) {
+            document.getElementById("fullName").value = students[index].fullName;
+            document.getElementById("email").value = students[index].email;
+            document.getElementById("phoneNumber").value = students[index].phoneNumber;
+            document.getElementById("country").value = students[index].country;
+            let genderRadio = students[index].gender === "Nam" ? document.getElementById("male") : document.getElementById("female");
+            genderRadio.checked = true;
+        }
+function arrangeAlphaB() {
+            students.sort((a, b) => a.fullName.localeCompare(b.fullName));
+            localStorage.setItem("dataStudent", JSON.stringify(students));
+            renderStudent();
+        }
+
+        function search() {
+            let searchStudent = document.getElementById("searchStudent").value.toUpperCase();
+            let filteredStudents = students.filter(student => student.fullName.toUpperCase().includes(searchStudent));
+
+            let html = "";
+            for (let i = 0; i < filteredStudents.length; i++) {
+                html +=
+                    `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${filteredStudents[i].fullName}</td>
+                        <td>${filteredStudents[i].email}</td>
+                        <td>${filteredStudents[i].phoneNumber}</td>
+                        <td>${filteredStudents[i].country}</td>
+                        <td>${filteredStudents[i].gender}</td>
+                        <td>
+                            <a onclick="editStudent(${i})" href="#">Edit</a>
+                            <a onclick="deleteStudent(${i})" href="#">Delete</a>
+                        </td>
+                    </tr>
+                    `
+            }
+
+            document.getElementById("tableStudent").innerHTML = html;
+        }
+
+        renderStudent();
+    </script>
+
+</body>
+
+</html>
